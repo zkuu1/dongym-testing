@@ -1,57 +1,62 @@
-// import { NextRequest, NextResponse } from 'next/server';
-// import { getServerSession } from 'next-auth';
-// import { authOptions } from '../auth/[...nextauth]/route';
-// import prisma from '@/lib/prisma';
+import prisma from "@/lib/prisma";
+import bcrypt from "bcryptjs";
+import { NextResponse } from "next/server";
 
-// export async function GET(request: NextRequest) {
-//   const session = await getServerSession(authOptions);
-  
-//   if (!session || session.user.role !== 'admin') {
-//     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-//   }
+export async function POST(req: Request) {
+  try {
+    const { name, email, password } = await req.json();
 
-//   try {
-//     const { searchParams } = new URL(request.url);
-//     const query = searchParams.get('query') || '';
-//     const page = parseInt(searchParams.get('page') || '1');
-//     const limit = 10;
-//     const skip = (page - 1) * limit;
+    if (!name || !email || !password) {
+      return NextResponse.json(
+        { error: "Semua field wajib diisi" },
+        { status: 400 }
+      );
+    }
 
-//     // Build where clause for search
-//     const where = query ? {
-//       OR: [
-//         { name: { contains: query, mode: 'insensitive' } },
-//         { membershipId: { contains: query, mode: 'insensitive' } }
-//       ]
-//     } : {};
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      return NextResponse.json(
+        { error: "Email sudah terdaftar" },
+        { status: 400 }
+      );
+    }
 
-//     // Get users with pagination
-//     const users = await prisma.user.findMany({
-//       where,
-//       skip,
-//       take: limit,
-//       include: {
-//         membership: true
-//       },
-//       orderBy: {
-//         createdAt: 'desc'
-//       }
-//     });
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-//     // Get total count for pagination
-//     const totalUsers = await prisma.user.count({ where });
+    // Create user
+    const user = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        role: "user",
+        image:
+          "https://res.cloudinary.com/duqxran5v/image/upload/v1757938955/470-4703547_privacy-icon-png_xfsthm.png",
+        membershipId: "non membership",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
 
-//     return NextResponse.json({ 
-//       users, 
-//       totalUsers,
-//       totalPages: Math.ceil(totalUsers / limit),
-//       currentPage: page
-//     });
-//   } catch (error) {
-//     console.error('Failed to fetch users:', error);
-//     return NextResponse.json(
-//       { error: 'Failed to fetch users' }, 
-//       { status: 500 }
-//     );
-//   }
-// }
+    // Create default membership untuk user baru
+    await prisma.membership.create({
+    data: {
+        userId: user.id,
+        id: user.id,
+        startDate: new Date(),
+        endDate: new Date(),
+        status: "nonactive",
+        type: "non membership",
+    },
+});
+
+
+    return NextResponse.json({ user });
+  } catch (err: any) {
+    console.error("Register error:", err);
+    return NextResponse.json(
+      { error: "Terjadi kesalahan saat registrasi" },
+      { status: 500 }
+    );
+  }
+}
