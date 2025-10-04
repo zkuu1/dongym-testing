@@ -13,6 +13,8 @@ export async function GET(req: Request) {
   }
 }
 
+// 
+
 // POST tambah absensi baru
 export async function POST(req: Request) {
   try {
