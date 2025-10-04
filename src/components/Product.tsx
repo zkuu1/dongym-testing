@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { motion, Variants } from "framer-motion";
-import Whey from "@/images/products/Whey.jpg";
+import Whey from "@/images/products/whey.jpg";
 import { containerVariants, itemVariants, dividerVariants, cardVariants } from "@/utils/motion";
 
 const WheyProducts = () => {
