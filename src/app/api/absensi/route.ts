@@ -19,15 +19,15 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { nama, no_member, status_kunjungan, tanggal } = body;
+    const { name, no_member, status_kunjungan, tanggal } = body;
 
-    if (!nama || !status_kunjungan) {
+    if (!name || !status_kunjungan) {
       return NextResponse.json({ error: "Nama dan kunjungan wajib diisi" }, { status: 400 });
     }
 
     const newAbsensi = await prisma.absensi.create({
       data: {
-        name: nama, 
+        name, 
         no_member: no_member || null,
         status_kunjungan,
         tanggal_kunjungan: tanggal ? new Date(tanggal) : new Date(),
